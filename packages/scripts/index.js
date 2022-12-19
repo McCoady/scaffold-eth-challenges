@@ -4,12 +4,6 @@ import { dexAbi } from "./abi/dexAbi.js";
 import { balloonAbi } from "./abi/balloonsAbi.js";
 import "dotenv/config";
 
-
-// Things to work on
-// Faster Mempool access (run own node)
-// Alchemy rate limits? Currently crashes if it picks up too many TX per second
-
-
 // Function Signatures for the functions we care about
 const ethToTokenSig = "0x789770f4";
 const tokenToEthSig = "0x70b2a30f";
