@@ -31,7 +31,7 @@ Open a terminal and run:
 
 `yarn start` (react app frontend)
 
-You'll need this project running on a testnet to make use of the mempool, so head to `./packages/hardhat/hardhatconfig.js` and change the `defaultNetwork` and the `initialNetwork` in  `./packages/react-app/src/App.jsx` to the network of your choosing (would recommend Goerli).
+You'll need this project running on a testnet to make use of the mempool, so head to `./packages/hardhat/hardhatconfig.js` and change the `defaultNetwork` and the `initialNetwork` in  `./packages/react-app/src/App.jsx` to the network of your choosing (by default it is set to Goerli).
 
 After that's done you're going to need to deploy the `Balloons.sol` and `DEX.sol` contracts. 
 
@@ -49,6 +49,13 @@ Your dex should now be set up and your deployer address has some baloons and som
 ### ⛳️ **Checkpoint 2: Preparing Your Script** 👨‍🔬
 
 In the `scripts` package you'll find everything we need to run out sandwich attack script. An abi folder which contains the abi for both the balloons and dex contracts. `utils.js` includes functions to make it easier for us generate providers & signers as well as where we will store our contract addresses. On lines 4 & 5 change the `dexAddress` & `balloonAddress` variables to the addresses of your deployed contracts.
+
+To get the private key of your deployer address run 
+
+```
+cd packages/scripts
+node getPrivateKey.js
+```
 
 Next head to `.example.env` and change it to `.env` and enter the private key of your deployer address & your alchemy api key.
 
