@@ -28,6 +28,7 @@ const balloonContract = new ethers.Contract(
 // Use provider to search for all "pending" mempool transactions
 provider.on("pending", async (tx) => {
     // Save each tx object
+
     const txInfo = await provider.getTransaction(tx);
     // Skip null transactions
     if (txInfo != null) {
@@ -41,16 +42,13 @@ provider.on("pending", async (tx) => {
 
                 // Prepare gas fees
                 // txOne should be slightly more gas than the 'sandwiched' transaction, so it goes ahead of it
-                const maxFee = ethers.utils.formatEther(txInfo.maxFeePerGas) * 10 ** 18 + 1000;
                 const maxPrio = ethers.utils.formatEther(txInfo.maxPriorityFeePerGas) * 10 ** 18 + 1000;
 
                 // txTwo should be slightly less gas than the 'sandwiched' transaction, so it goes behind it
-                const slowFee = ethers.utils.formatEther(txInfo.maxFeePerGas) * 10 ** 18 - 1000;
                 const slowPrio = ethers.utils.formatEther(txInfo.maxPriorityFeePerGas) * 10 ** 18 - 1000;
 
                 // Prepare override info for function with arguments
                 const slowOverrides = {
-                    maxFeePerGas: slowFee,
                     maxPriorityFeePerGas: slowPrio
                 };
 
@@ -65,14 +63,15 @@ provider.on("pending", async (tx) => {
                 // txOne is a copy of the 'sandwiched' transaction, but with slightly more maxFeePerGas & maxPriorityFeePerGas
                 const txOne = await dexContract.ethToToken({
                     value: txInfo.value,
-                    maxFeePerGas: maxFee,
                     maxPriorityFeePerGas: maxPrio
                 })
 
                 // Confirm txOne was built without error
                 console.log("txOne okay", txOne)
 
-                // txTwo sells the tokensBought immediately after the 'sandwiched' transaction
+                console.log(slowPrio)
+
+                // txTwo sells the- tokensBought immediately after the 'sandwiched' transaction
                 const txTwo = await dexContract.tokenToEth(
                     ethers.utils.formatEther(tokensBought) * 10 ** 18, slowOverrides
                 )
@@ -86,13 +85,11 @@ provider.on("pending", async (tx) => {
                 console.log(tokenAmount)
 
                 // Work out gas fees & overrides again
-                const maxFee = ethers.utils.formatEther(txInfo.maxFeePerGas) * 10 ** 18 + 1000;
                 const maxPrio = ethers.utils.formatEther(txInfo.maxPriorityFeePerGas) * 10 ** 18 + 1000;
-                const slowFee = ethers.utils.formatEther(txInfo.maxFeePerGas) * 10 ** 18 - 1000;
+
                 const slowPrio = ethers.utils.formatEther(txInfo.maxPriorityFeePerGas) * 10 ** 18 - 1000;
 
                 const fastOverrides = {
-                    maxFeePerGas: maxFee,
                     maxPriorityFeePerGas: maxPrio
                 };
 
@@ -114,7 +111,6 @@ provider.on("pending", async (tx) => {
                 // txTwo sells the tokensBought immediately after the 'sandwiched' transaction
                 const txTwo = await dexContract.ethToToken({
                     value: ethReceived,
-                    maxFeePerGas: slowFee,
                     maxPriorityFeePerGas: slowPrio
                 })
                 console.log("txTwo okay", txTwo)
