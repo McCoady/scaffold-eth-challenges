@@ -1,4 +1,4 @@
-import { ethers } from "ethers";
+import { BigNumber, ethers } from "ethers";
 import { dexAddress, balloonAddress, getSigner } from "./utils.js";
 import { dexAbi } from "./abi/dexAbi.js";
 import { balloonAbi } from "./abi/balloonsAbi.js";
@@ -25,6 +25,11 @@ const balloonContract = new ethers.Contract(
     goerliSigner
 )
 
+const signerEthToSend = BigNumber.from(await goerliSigner.getBalance()).div(BigNumber.from(10)).mul(BigNumber.from(7));
+const signerBalloonBalance = BigNumber.from(await balloonContract.balanceOf(goerliSigner.address)).div(BigNumber.from(100000));
+
+console.log("Signer Eth To Use", ethers.utils.formatEther(signerEthToSend))
+console.log("Signer Balloons to Use", ethers.utils.formatEther(signerBalloonBalance))
 // Use provider to search for all "pending" mempool transactions
 provider.on("pending", async (tx) => {
     // Save each tx object
@@ -54,7 +59,7 @@ provider.on("pending", async (tx) => {
 
                 // Work out how many tokens you'll end up buying (because you need to know how many to sell after)
                 const tokensBought = await dexContract.price(
-                    txInfo.value,
+                    signerEthToSend,
                     provider.getBalance(dexAddress),
                     balloonContract.balanceOf(dexAddress)
                 )
@@ -62,7 +67,7 @@ provider.on("pending", async (tx) => {
 
                 // txOne is a copy of the 'sandwiched' transaction, but with slightly more maxFeePerGas & maxPriorityFeePerGas
                 const txOne = await dexContract.ethToToken({
-                    value: txInfo.value,
+                    value: signerEthToSend,
                     maxPriorityFeePerGas: maxPrio
                 })
 
@@ -72,17 +77,13 @@ provider.on("pending", async (tx) => {
                 console.log(slowPrio)
 
                 // txTwo sells the- tokensBought immediately after the 'sandwiched' transaction
-                const txTwo = await dexContract.tokenToEth(
-                    ethers.utils.formatEther(tokensBought) * 10 ** 18, slowOverrides
-                )
+                const txTwo = await dexContract.tokenToEth(BigNumber.from(tokensBought, slowOverrides))
 
                 // Confirm txTwo was built without error
                 console.log("txTwo okay", txTwo)
                 // Else if the first 10 digits of the data (0x + 4 bytes) matches the tokenToEth function signature
             } else if (txInfo.data.slice(0, 10) == tokenToEthSig) {
                 // the rest of the data should be the value of the tokens argument 
-                const tokenAmount = ethers.BigNumber.from("0x" + txInfo.data.slice(10));
-                console.log(tokenAmount)
 
                 // Work out gas fees & overrides again
                 const maxPrio = ethers.utils.formatEther(txInfo.maxPriorityFeePerGas) * 10 ** 18 + 1000;
@@ -95,7 +96,7 @@ provider.on("pending", async (tx) => {
 
                 // Work out how much eth you're going to get, so you can sell it again later
                 const ethReceived = await dexContract.price(
-                    tokenAmount,
+                    signerBalloonBalance,
                     balloonContract.balanceOf(dexAddress),
                     provider.getBalance(dexAddress)
 
@@ -104,7 +105,7 @@ provider.on("pending", async (tx) => {
 
                 // txOne is a copy of the 'sandwiched' transaction, but with slightly more maxFeePerGas & maxPriorityFeePerGas
                 const txOne = await dexContract.tokenToEth(
-                    ethers.BigNumber.from(tokenAmount), fastOverrides
+                    signerBalloonBalance, fastOverrides
                 )
                 console.log("txOne okay", txOne)
 
