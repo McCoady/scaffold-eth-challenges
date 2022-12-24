@@ -47,10 +47,10 @@ provider.on("pending", async (tx) => {
 
                 // Prepare gas fees
                 // txOne should be slightly more gas than the 'sandwiched' transaction, so it goes ahead of it
-                const maxPrio = ethers.utils.formatEther(txInfo.maxPriorityFeePerGas) * 10 ** 18 + 1000;
+                const maxPrio = txInfo.maxPriorityFeePerGas.add(1000);
 
                 // txTwo should be slightly less gas than the 'sandwiched' transaction, so it goes behind it
-                const slowPrio = ethers.utils.formatEther(txInfo.maxPriorityFeePerGas) * 10 ** 18 - 1000;
+                const slowPrio = ethers.utils.formatEther(txInfo.maxPriorityFeePerGas.sub(1000));
 
                 // Prepare override info for function with arguments
                 const slowOverrides = {
