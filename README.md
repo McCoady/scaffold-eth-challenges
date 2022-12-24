@@ -68,7 +68,7 @@ Now we're ready to get into the script itself.
 
 ### ⛳️ **Checkpoint 3: Accessing the mempool** 🔎
 
-Jump into the index.js script in this folder. First we save the function selectors for the dex contracts ethToToken & tokenToEth functions. For more info on function selectors [here](https://solidity-by-example.org/function-selector/). 
+Jump into the regularSandwich.js script in this folder. First we save the function selectors for the dex contracts ethToToken & tokenToEth functions. For more info on function selectors [here](https://solidity-by-example.org/function-selector/). 
 
 Then we create a signer and provider for our script to work with and create instances of both of our contracts with ethers.
 
@@ -87,17 +87,17 @@ First we want to make sure the txInfo received isn't null, as this could cause o
 
 Then we want to filter even further to only get transactions calling either the `ethToToken` or `tokenTokEth` functions.
 
-When we find a transaction that matches we want to prepare two transactions, one with a little more gas than the target transaction (so it goes ahead of it in the block) and one with a little less gas than the target transaction (so it goes behind it in the block). The comments in `index.js` explain how we do this with more detail.
+When we find a transaction that matches we want to prepare two transactions, one with a little more gas than the target transaction (so it goes ahead of it in the block) and one with a little less gas than the target transaction (so it goes behind it in the block). The comments in `regularSandwich.js` explain how we do this with more detail.
 
 Then we need to work out how much eth or tokens we're going to be buying in transaction one, so we can sell the same amount on the other side.
 
 Once we've worked this out we can build two transactions. txOne copies the target transaction and just adds a little gas, to make sure it goes ahead of it in the block. Then txTwo sells the tokens or ether bought in txOne after the target transaction. This means that as the price gets moved in one direction by txOne and the target transaction, txTwo sells into that price movement making small (or larger depending on the value of the target transaction) profit on every swap sent to the dex contract.
 
-See the comments in `index.js` for more detail on how it's working.
+See the comments in `regularSandwich.js` for more detail on how it's working.
 
 ### ⛳️ **Checkpoint 5: Test It Yourself** 🤙
 
-When you're ready to test, call `node index.js` from the terminal to start viewing the mempool, then in the scaffold eth browser UI prepare a 'target transaction', to trade a little eth or tokens. Once submitted our script should see and attack this transaction as explained above!
+When you're ready to test, call `node regularSandwich.js` from the terminal to start viewing the mempool, then in the scaffold eth browser UI prepare a 'target transaction', to trade a little eth or tokens. Once submitted our script should see and attack this transaction as explained above!
 
 ---
 
@@ -107,5 +107,5 @@ A few things that could be worked on to optimise this script.
 
 - Running your own node, this would pick up mempool transactions quicker than using a third party api, and also avoid you running into rate limit isses.
 
-- Optimising trades, could make more profits on the attacks with different prices, or by adding a second dex to load up on size to sell into the target transactions slippage?
+- Optimising trades, could make more profits on the attacks with different prices, or by adding a second dex to load up on size to sell into the target transactions slippage? **Added bigSandwich.js that attacks with larger size, for more profitable sandwiches**
 
