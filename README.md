@@ -1,6 +1,6 @@
 # 🏗 scaffold-eth | 🏰 BuidlGuidl
 
-## 🚩 **Challenge 4: Minimum Viable Exchange (WITH SLIPPAGE PROTECTION**
+## 🚩 **Challenge 4: Minimum Viable Exchange (with slippage protection)**
 
 This repo builds on the [Speed Run Ethereum Challenge 4: Minimum Viable Exchange](https://speedrunethereum.com/)[GitHub Repo](https://github.com/scaffold-eth/scaffold-eth-challenges/tree/challenge-4-dex) and adds Minimum Viable Slippage Protection to the dex. This repo assumes you've already completed the previously mentioned challenge. 
 
