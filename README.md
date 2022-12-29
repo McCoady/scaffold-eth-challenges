@@ -31,6 +31,7 @@ You'll have three terminals up for:
 
 `yarn deploy` (to compile, deploy, and publish your contracts to the frontend)
 
+---
 
 ### ** 🥼 Possible Improvements **
 
