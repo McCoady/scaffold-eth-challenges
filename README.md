@@ -2,7 +2,9 @@
 
 ## 🚩 **Challenge 4: Minimum Viable Exchange (WITH SLIPPAGE PROTECTION**
 
-This repo builds on the [Speed Run Ethereum Challenge 4: Minimum Viable Exchange](https://speedrunethereum.com/)[GitHub Repo](https://github.com/scaffold-eth/scaffold-eth-challenges/tree/challenge-4-dex) and adds Minimum Viable Slippage Protection to the dex. This repo assumes you've already completed the previously mentioned challenge. To add slippage protection, both the `tokensToEth` and `EthToTokens` functions add `minEthBack` and `minTokensBack` arguments respectively. The front end is then responsible for calculating 1% slippage from the current price and adding it to the transaction without the user having to worry about it. Then when the function it called the price is rechecked onchain to make sure that `price` will return at least `minTokensBack`/`minEthBack`, otherwise it reverts if there's been too much slippage.
+This repo builds on the [Speed Run Ethereum Challenge 4: Minimum Viable Exchange](https://speedrunethereum.com/)[GitHub Repo](https://github.com/scaffold-eth/scaffold-eth-challenges/tree/challenge-4-dex) and adds Minimum Viable Slippage Protection to the dex. This repo assumes you've already completed the previously mentioned challenge. 
+
+To add slippage protection, both the `tokensToEth` and `EthToTokens` functions add `minEthBack` and `minTokensBack` arguments respectively. The front end is then responsible for calculating 1% slippage from the current price and adding it to the transaction without the user having to worry about it. Then when the function it called the price is rechecked onchain to make sure that `price` will return at least `minTokensBack`/`minEthBack`, otherwise it reverts if there's been too much slippage.
 
 ---
 
