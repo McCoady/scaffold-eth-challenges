@@ -56,6 +56,7 @@ So the function call with revert if the price has moved further than the users a
 #### Frontend Changes
 
 The `rowForm`s for both `ethToToken`(ln73-82) and `tokenToEth`(ln84-115) now calculate the expected price given the users input amount, calculate 99% of this and enter it as the `minEthBack`/`minTokensBack` argument when building the transaction for the user. The current calculated price & minimum Tokens/Eth back are printed in the console.
+
 ---
 
 ### ** 🥼 Possible Improvements 🔬**
