@@ -33,7 +33,32 @@ You'll have three terminals up for:
 
 ---
 
-### ** 🥼 Possible Improvements **
+### ** 🔑 Key Changes 🔨**
+
+The changes for this upgrade are in the DEX.sol contract and DEX.jsx component.
+
+#### Contract Changes
+
+The `tokenToEth` & `EthToToken` functions accept `minEthBack` and `minTokensBack` arguments.
+The contract then checks.
+```
+        ethOutput = price(tokenInput, tokenReserve, ethReserve);
+        if (ethOutput < minEthBack) revert SlippageError();
+```
+or
+```
+        tokenOutput = price(msg.value, ethReserve, tokenReserve);
+        if (tokenOutput < minTokensBack) revert SlippageError();
+```
+
+So the function call with revert if the price has moved further than the users accepted slippage amount.
+
+#### Frontend Changes
+
+The `rowForm`s for both `ethToToken`(ln73-82) and `tokenToEth`(ln84-115) now calculate the expected price given the users input amount, calculate 99% of this and enter it as the `minEthBack`/`minTokensBack` argument when building the transaction for the user. The current calculated price & minimum Tokens/Eth back are printed in the console.
+---
+
+### ** 🥼 Possible Improvements 🔬**
 
 - Adding an 'advanced' option which gives the user the ability to select their own accepted slippage percentage.
 - Better UI to show interested users whats going on under the hood (currently just console.log's current `price` and `minTokensBack` calculated on the front end.
