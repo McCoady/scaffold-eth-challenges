@@ -2,7 +2,7 @@ import { Card, Col, Divider, Input, Row } from "antd";
 import { useBalance, useContractReader, useBlockNumber } from "eth-hooks";
 import { useEventListener } from "eth-hooks/events/useEventListener";
 import { useTokenBalance } from "eth-hooks/erc/erc-20/useTokenBalance";
-import { ethers } from "ethers";
+import { BigNumber, ethers } from "ethers";
 import React, { useState } from "react";
 import Address from "./Address";
 import Contract from "./Contract";
@@ -69,19 +69,26 @@ export default function Dex(props) {
   if (props.readContracts && props.readContracts[contractName]) {
     display.push(
       <div>
+        <Divider>DEX Transactions have a built in 1% slippage allowance.</Divider>
         {rowForm("ethToToken", "💸", async value => {
           let valueInEther = ethers.utils.parseEther("" + value);
-          let valuePlusExtra = ethers.utils.parseEther("" + value * 1.03);
-          console.log("valuePlusExtra", valuePlusExtra);
-          let swapEthToTokenResult = await tx(writeContracts[contractName]["ethToToken"]({ value: valuePlusExtra }));
+          console.log("valueInEther", valueInEther);
+          let price = await props.readContracts[contractName].price(valueInEther, contractBalance, tokenBalance)
+          let minTokensBack = price.mul(99).div(100);
+          console.log("CURRENT PRICE", ethers.utils.formatEther(price));
+          console.log("MIN TOKENS BACK", ethers.utils.formatEther(minTokensBack));
+          let swapEthToTokenResult = await tx(writeContracts[contractName]["ethToToken"](minTokensBack, { value: valueInEther }));
           console.log("swapEthToTokenResult:", swapEthToTokenResult);
         })}
 
         {rowForm("tokenToEth", "🔏", async value => {
           let valueInEther = ethers.utils.parseEther("" + value);
-          console.log("valueInEther", valueInEther);
-          let valuePlusExtra = ethers.utils.parseEther("" + value * 1.03);
-          console.log("valuePlusExtra", valuePlusExtra);
+          console.log("VAL IN ETHER", valueInEther);
+          let price = await props.readContracts[contractName].price(valueInEther, tokenBalance, contractBalance);
+          let minEthBack = price.mul(99).div(100);
+          console.log("CURRENT PRICE", ethers.utils.formatEther(price));
+          console.log("MIN ETH BACK", ethers.utils.formatEther(minEthBack))
+
           let allowance = await props.readContracts[tokenName].allowance(
             props.address,
             props.readContracts[contractName].address,
@@ -89,15 +96,15 @@ export default function Dex(props) {
           console.log("allowance", allowance);
 
           let approveTx;
-          if (allowance.lt(valuePlusExtra)) {
+          if (allowance.lt(valueInEther)) {
             approveTx = await tx(
-              writeContracts[tokenName].approve(props.readContracts[contractName].address, valuePlusExtra, {
+              writeContracts[tokenName].approve(props.readContracts[contractName].address, valueInEther, {
                 gasLimit: 200000,
               }),
             );
           }
 
-          let swapTx = tx(writeContracts[contractName]["tokenToEth"](valuePlusExtra, { gasLimit: 200000 }));
+          let swapTx = tx(writeContracts[contractName]["tokenToEth"](valueInEther, minEthBack, { gasLimit: 200000 }));
           if (approveTx) {
             console.log("waiting on approve to finish...");
             let approveTxResult = await approveTx;
