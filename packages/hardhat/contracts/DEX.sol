@@ -174,7 +174,7 @@ contract DEX {
 
     /**
      * @notice allows deposits of $BAL and $ROCK to liquidity pool
-     * NOTE: parameter is the number of tokenOne referenced with this function call. That amount is used to determine the amount of tokenTown needed as well and taken from the depositor.
+     * NOTE: parameter is the number of $BAL referenced with this function call. That amount is used to determine the amount of $ROCKS needed as well and taken from the depositor.
      * NOTE: user has to make sure to give DEX approval to spend both their tokens on their behalf by calling approve function prior to this function call.
      * NOTE: Equal parts of both assets will be removed from the user's wallet with respect to the price outlined by the AMM.
      */
