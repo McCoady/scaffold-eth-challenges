@@ -18,12 +18,12 @@ contract DEX {
 
     error SlippageError();
 
-    error InsufficientLiquidityError(uint256 _liquidityAvailalbe);
+    error InsufficientLiquidityError(uint256 _liquidityAvailable);
 
     /* ========== GLOBAL VARIABLES ========== */
     //outlines use of SafeMath for uint256 variables
-    IERC20 tokenOne; //instantiates the imported contract
-    IERC20 tokenTwo;
+    IERC20 tokenOne; //instantiates the imported contractOne
+    IERC20 tokenTwo; //instantiates the imported contractTwo
 
     uint256 public totalLiquidity;
     mapping(address => uint256) public liquidity;
@@ -31,7 +31,7 @@ contract DEX {
     /* ========== EVENTS ========== */
 
     /**
-     * @notice Emitted when tokenToEth() swap transacted
+     * @notice Emitted when a swap is transacted
      */
     event TokenSwap(
         address _user,
@@ -139,7 +139,7 @@ contract DEX {
 
         emit TokenSwap(
             msg.sender,
-            "🎈 To 🌑",
+            "balloons To rocks",
             tokensIn,
             tokenOutput
         );
@@ -166,7 +166,7 @@ contract DEX {
 
         emit TokenSwap(
             msg.sender,
-            "🌑 to 🎈",
+            "rocks to balloons",
             tokensIn,
             tokenOutput
         );
