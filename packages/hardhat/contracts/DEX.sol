@@ -4,17 +4,15 @@ pragma solidity >=0.8.0 <0.9.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+// Change from ETH-Token pair to Token-Token pair. Keep slippage (have optional advanced setting)
+
 /**
- * @title DEX Template
- * @author stevepham.eth and m00npapi.eth
- * @notice Empty DEX.sol that just outlines what features could be part of the challenge (up to you!)
- * @dev We want to create an automatic market where our contract will hold reserves of both ETH and 🎈 Balloons. These reserves will provide liquidity that allows anyone to swap between the assets.
- * NOTE: functions outlined here are what work with the front end of this branch/repo. Also return variable names that may need to be specified exactly may be referenced (if you are confused, see solutions folder in this repo and/or cross reference with front-end code).
+ * @title Token-Token DEX
+ * @author mctoady.eth
+ * @notice A simple token to token DEX with built in slippage protection
  */
 contract DEX {
-    error TokenTransferError();
-
-    error EtherTransferError();
+    error TokenTransferError(address _token);
 
     error ZeroQuantityError();
 
@@ -24,7 +22,8 @@ contract DEX {
 
     /* ========== GLOBAL VARIABLES ========== */
     //outlines use of SafeMath for uint256 variables
-    IERC20 token; //instantiates the imported contract
+    IERC20 tokenOne; //instantiates the imported contract
+    IERC20 tokenTwo;
 
     uint256 public totalLiquidity;
     mapping(address => uint256) public liquidity;
@@ -32,23 +31,13 @@ contract DEX {
     /* ========== EVENTS ========== */
 
     /**
-     * @notice Emitted when ethToToken() swap transacted
-     */
-    event EthToTokenSwap(
-        address _user,
-        string _tradeDirection,
-        uint256 _ethSwapped,
-        uint256 _tokensReceived
-    );
-
-    /**
      * @notice Emitted when tokenToEth() swap transacted
      */
-    event TokenToEthSwap(
+    event TokenSwap(
         address _user,
         string _tradeDirection,
         uint256 _tokensSwapped,
-        uint256 _ethReceived
+        uint256 _tokensReceived
     );
 
     /**
@@ -57,8 +46,8 @@ contract DEX {
     event LiquidityProvided(
         address _user,
         uint256 _liquidityMinted,
-        uint256 _ethAdded,
-        uint256 _tokensAdded
+        uint256 _tokenOneAdded,
+        uint256 _tokenTwoAdded
     );
 
     /**
@@ -67,14 +56,15 @@ contract DEX {
     event LiquidityRemoved(
         address _user,
         uint256 _liquidityAmount,
-        uint256 _ethAmount,
-        uint256 _tokenAmount
+        uint256 _tokenOneAmount,
+        uint256 _tokenTwoAmount
     );
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address token_addr) {
-        token = IERC20(token_addr); //specifies the token address that will hook into the interface and be used through the variable 'token'
+    constructor(address tokenOne_addr, address tokenTwo_addr) {
+        tokenOne = IERC20(tokenOne_addr); //specifies the token address that will hook into the interface and be used through the variable 'token'
+        tokenTwo = IERC20(tokenTwo_addr); //specifies the token address that will hook into the interface and be used through the variable 'token'
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -85,16 +75,22 @@ contract DEX {
      * @return totalLiquidity is the number of LPTs minting as a result of deposits made to DEX contract
      * NOTE: since ratio is 1:1, this is fine to initialize the totalLiquidity (wrt to balloons) as equal to eth balance of contract.
      */
-    function init(uint256 tokens) public payable returns (uint256) {
+    function init(uint256 tokens) public returns (uint256) {
         require(totalLiquidity == 0, "DEX_ALREADY_INIT");
-        totalLiquidity = address(this).balance;
+        totalLiquidity = tokens;
         liquidity[msg.sender] = totalLiquidity;
-        bool tokenTransferred = token.transferFrom(
+        bool tokenOneTransferred = tokenOne.transferFrom(
             msg.sender,
             address(this),
             tokens
         );
-        if (!tokenTransferred) revert TokenTransferError();
+        bool tokenTwoTransferred = tokenTwo.transferFrom(
+            msg.sender,
+            address(this),
+            tokens
+        );
+        if (!tokenOneTransferred) revert TokenTransferError(address(tokenOne));
+        if (!tokenTwoTransferred) revert TokenTransferError(address(tokenTwo));
         return totalLiquidity;
     }
 
@@ -123,119 +119,125 @@ contract DEX {
     }
 
     /**
-     * @notice sends Ether to DEX in exchange for $BAL
+     * @notice sends tokenOne to DEX in exchange for tokenTwo
      */
-    function ethToToken(uint256 minTokensBack)
+    function balloonsToRocks(uint256 tokensIn, uint256 minTokensBack)
         public
-        payable
         returns (uint256 tokenOutput)
     {
-        if (msg.value == 0) revert ZeroQuantityError();
-        uint256 ethReserve = address(this).balance - msg.value;
-        uint256 tokenReserve = token.balanceOf(address(this));
-        tokenOutput = price(msg.value, ethReserve, tokenReserve);
+        if (tokensIn == 0) revert ZeroQuantityError();
+        uint256 tokenOneReserve = tokenOne.balanceOf(address(this));
+        uint256 tokenTwoReserve = tokenTwo.balanceOf(address(this));
+        tokenOutput = price(tokensIn, tokenOneReserve, tokenTwoReserve);
         if (tokenOutput < minTokensBack) revert SlippageError();
 
-        bool tokenTransferred = token.transfer(msg.sender, tokenOutput);
-        if (!tokenTransferred) revert TokenTransferError();
+        bool tokenOneTransferred = tokenOne.transferFrom(msg.sender,address(this), tokensIn);
+        if (!tokenOneTransferred) revert TokenTransferError(address(tokenOne));
 
-        emit EthToTokenSwap(
+        bool tokenTwoTransferred = tokenTwo.transfer(msg.sender, tokenOutput);
+        if (!tokenTwoTransferred) revert TokenTransferError(address(tokenTwo));
+
+        emit TokenSwap(
             msg.sender,
-            "Eth to Balloons",
-            msg.value,
+            "🎈 To 🌑",
+            tokensIn,
             tokenOutput
         );
     }
 
     /**
-     * @notice sends $BAL tokens to DEX in exchange for Ether
+     * @notice sends tokenTwo to DEX in exchange for tokenOne
      */
-    function tokenToEth(uint256 tokenInput, uint256 minEthBack)
+    function rocksToBalloons(uint256 tokensIn, uint256 minTokensBack)
         public
-        returns (uint256 ethOutput)
+        returns (uint256 tokenOutput)
     {
-        if (tokenInput == 0) revert ZeroQuantityError();
-        uint256 tokenReserve = token.balanceOf(address(this)) - tokenInput;
-        uint256 ethReserve = address(this).balance;
-        ethOutput = price(tokenInput, tokenReserve, ethReserve);
-        if (ethOutput < minEthBack) revert SlippageError();
+        if (tokensIn == 0) revert ZeroQuantityError();
+        uint256 tokenTwoReserve = tokenTwo.balanceOf(address(this));
+        uint256 tokenOneReserve = tokenOne.balanceOf(address(this));
+        tokenOutput = price(tokensIn, tokenTwoReserve, tokenOneReserve);
+        if (tokenOutput < minTokensBack) revert SlippageError();
 
-        bool tokenTransferred = token.transferFrom(
+        bool tokenTwoTransferred = tokenTwo.transferFrom(msg.sender,address(this), tokensIn);
+        if (!tokenTwoTransferred) revert TokenTransferError(address(tokenTwo));
+
+        bool tokenOneTransferred = tokenOne.transfer(msg.sender, tokenOutput);
+        if (!tokenOneTransferred) revert TokenTransferError(address(tokenOne));
+
+        emit TokenSwap(
             msg.sender,
-            address(this),
-            tokenInput
-        );
-        if (!tokenTransferred) revert TokenTransferError();
-
-        (bool ethSent, ) = msg.sender.call{value: ethOutput}("");
-        if (!ethSent) revert EtherTransferError();
-
-        emit TokenToEthSwap(
-            msg.sender,
-            "Balloons to ETH",
-            tokenInput,
-            ethOutput
+            "🌑 to 🎈",
+            tokensIn,
+            tokenOutput
         );
     }
 
     /**
-     * @notice allows deposits of $BAL and $ETH to liquidity pool
-     * NOTE: parameter is the msg.value sent with this function call. That amount is used to determine the amount of $BAL needed as well and taken from the depositor.
-     * NOTE: user has to make sure to give DEX approval to spend their tokens on their behalf by calling approve function prior to this function call.
+     * @notice allows deposits of $BAL and $ROCK to liquidity pool
+     * NOTE: parameter is the number of tokenOne referenced with this function call. That amount is used to determine the amount of tokenTown needed as well and taken from the depositor.
+     * NOTE: user has to make sure to give DEX approval to spend both their tokens on their behalf by calling approve function prior to this function call.
      * NOTE: Equal parts of both assets will be removed from the user's wallet with respect to the price outlined by the AMM.
      */
-    function deposit() public payable returns (uint256 tokensDeposited) {
-        if (msg.value == 0) revert ZeroQuantityError();
+    function deposit() public returns (uint256 tokenOneDeposited) {
+        if (tokenOneDeposited == 0) revert ZeroQuantityError();
 
-        uint256 ethReserve = address(this).balance - msg.value;
-        uint256 tokenReserve = token.balanceOf(address(this));
-        tokensDeposited = (msg.value * tokenReserve) / ethReserve;
+        uint256 tokenOneReserve = tokenOne.balanceOf(address(this));
+        uint256 tokenTwoReserve = tokenTwo.balanceOf(address(this));
+        uint256 tokenTwoDeposited = (tokenOneDeposited * tokenOneReserve) / tokenTwoReserve;
 
-        uint256 liquidityMinted = (msg.value * totalLiquidity) / ethReserve;
+        uint256 liquidityMinted = (tokenOneDeposited * totalLiquidity) / tokenOneReserve;
         liquidity[msg.sender] += liquidityMinted;
-        totalLiquidity += tokensDeposited;
+        totalLiquidity += tokenOneDeposited;
 
-        bool tokenTransferred = token.transferFrom(
+        bool tokenOneTransferred = tokenOne.transferFrom(
             msg.sender,
             address(this),
-            tokensDeposited
+            tokenOneDeposited
         );
-        if (!tokenTransferred) revert TokenTransferError();
+        if (!tokenOneTransferred) revert TokenTransferError(address(tokenOne));
+
+        bool tokenTwoTransferred = tokenTwo.transferFrom(
+            msg.sender,
+            address(this),
+            tokenTwoDeposited
+        );
+        if (!tokenTwoTransferred) revert TokenTransferError(address(tokenTwo));
+
 
         emit LiquidityProvided(
             msg.sender,
             liquidityMinted,
-            msg.value,
-            tokensDeposited
+            tokenOneDeposited,
+            tokenTwoDeposited
         );
     }
 
     /**
-     * @notice allows withdrawal of $BAL and $ETH from liquidity pool
+     * @notice allows withdrawal of $BAL and $ROCK from liquidity pool
      * NOTE: with this current code, the msg caller could end up getting very little back if the liquidity is super low in the pool. I guess they could see that with the UI.
      */
     function withdraw(uint256 amount)
         public
-        returns (uint256 ethAmount, uint256 tokenAmount)
+        returns (uint256 tokenOneAmount, uint256 tokenTwoAmount)
     {
         if (liquidity[msg.sender] < amount)
             revert InsufficientLiquidityError(liquidity[msg.sender]);
 
-        uint256 ethReserve = address(this).balance;
-        uint256 tokenReserve = token.balanceOf(address(this));
+        uint256 tokenOneReserve = tokenOne.balanceOf(address(this));
+        uint256 tokenTwoReserve = tokenTwo.balanceOf(address(this));
 
-        ethAmount = (amount * ethReserve) / totalLiquidity;
-        tokenAmount = (amount * tokenReserve) / totalLiquidity;
+        tokenOneAmount = (amount * tokenOneReserve) / totalLiquidity;
+        tokenTwoAmount = (amount * tokenTwoReserve) / totalLiquidity;
 
         liquidity[msg.sender] -= amount;
         totalLiquidity -= amount;
 
-        (bool ethSent, ) = msg.sender.call{value: ethAmount}("");
-        if (!ethSent) revert EtherTransferError();
+        bool tokenOneSent = tokenOne.transfer(msg.sender, tokenOneAmount);
+        if (!tokenOneSent) revert TokenTransferError(address(tokenOne));
 
-        bool tokenSent = token.transfer(msg.sender, tokenAmount);
-        if (!tokenSent) revert TokenTransferError();
+        bool tokenTwoSent = tokenTwo.transfer(msg.sender, tokenTwoAmount);
+        if (!tokenTwoSent) revert TokenTransferError(address(tokenTwo));
 
-        emit LiquidityRemoved(msg.sender, amount, ethAmount, tokenAmount);
+        emit LiquidityRemoved(msg.sender, amount, tokenOneAmount, tokenTwoAmount);
     }
 }

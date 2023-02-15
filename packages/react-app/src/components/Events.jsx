@@ -28,13 +28,11 @@ export default function Events({ contracts, contractName, eventName, localProvid
       <h2>
         {eventName} Events
         <br />
-        {eventName === "EthToTokenSwap"
+        {eventName === "TokenSwap"
           ? " ⟠ -->🎈 Address | Trade | AmountIn | AmountOut"
-          : eventName === "TokenToEthSwap"
-          ? "🎈-->⟠ Address | Trade | AmountOut | AmountIn"
           : eventName === "LiquidityProvided"
-          ? "➕ Address | Liquidity Minted | Eth In | Balloons In"
-          : "➖ Address | Liquidity Withdrawn | ETH out | Balloons Out "}
+          ? "➕ Address | Liquidity Minted | Rocks In | Balloons In"
+          : "➖ Address | Liquidity Withdrawn | Rocks out | Balloons Out "}
       </h2>
       <List
         bordered
@@ -50,7 +48,7 @@ export default function Events({ contracts, contractName, eventName, localProvid
           return (
             <List.Item key={item.blockNumber + "_" + item.args[0].toString()}>
               <Address address={item.args[0]} ensProvider={mainnetProvider} fontSize={16} />
-              {item.args[1].toString().indexOf("E") == -1 ? (
+              {item.args[1].toString().indexOf("R") == -1 ? (
                 <TokenBalance balance={item.args[1]} provider={localProvider} />
               ) : (
                 `${item.args[1].toString()}`

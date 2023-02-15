@@ -343,16 +343,7 @@ function App(props) {
           <Events
             contracts={readContracts}
             contractName="DEX"
-            eventName="EthToTokenSwap"
-            localProvider={localProvider}
-            mainnetProvider={mainnetProvider}
-            startBlock={1}
-          />
-
-          <Events
-            contracts={readContracts}
-            contractName="DEX"
-            eventName="TokenToEthSwap"
+            eventName="TokenSwap"
             localProvider={localProvider}
             mainnetProvider={mainnetProvider}
             startBlock={1}
@@ -396,6 +387,15 @@ function App(props) {
 
           <Contract
             name="Balloons"
+            price={price}
+            signer={userSigner}
+            provider={localProvider}
+            address={address}
+            blockExplorer={blockExplorer}
+            contractConfig={contractConfig}
+          />
+        <Contract
+            name="Rocks"
             price={price}
             signer={userSigner}
             provider={localProvider}
@@ -491,6 +491,7 @@ function App(props) {
         )}
 
         <TokenBalance name={"Balloons"} img={"🎈"} address={address} contracts={readContracts} />
+        <TokenBalance name={"Rocks"} img={"🌑"} address={address} contracts={readContracts} />
         <h3>
           💦💦: <TokenBalance balance={liquidity} />
         </h3>

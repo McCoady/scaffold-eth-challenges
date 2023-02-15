@@ -27,19 +27,19 @@ export default function Curve(props) {
     const width = canvas.width;
     const height = canvas.height;
 
-    if (canvas.getContext && props.ethReserve && props.tokenReserve) {
-      const k = props.ethReserve * props.tokenReserve;
+    if (canvas.getContext && props.tokenOneReserve && props.tokenTwoReserve) {
+      const k = props.tokenOneReserve * props.tokenTwoReserve;
 
       const ctx = canvas.getContext("2d");
       ctx.clearRect(0, 0, width, height);
 
-      let maxX = k / (props.ethReserve / 4);
+      let maxX = k / (props.tokenOneReserve / 4);
       let minX = 0;
 
-      if (props.addingEth || props.addingToken) {
-        maxX = k / (props.ethReserve * 0.4);
-        //maxX = k/(props.ethReserve*0.8)
-        minX = k / Math.max(0, 500 - props.ethReserve);
+      if (props.addingBalloons || props.addingRocks) {
+        maxX = k / (props.tokenOneReserve * 0.4);
+        //maxX = k/(props.tokenOneReserve*0.8)
+        minX = k / Math.max(0, 500 - props.tokenOneReserve);
       }
 
       const maxY = (maxX * height) / width;
@@ -84,87 +84,87 @@ export default function Curve(props) {
 
       ctx.lineWidth = 1;
 
-      if (props.addingEth) {
-        let newEthReserve = props.ethReserve + parseFloat(props.addingEth);
+      if (props.addingBalloons) {
+        let newtokenOneReserve = props.tokenOneReserve + parseFloat(props.addingBalloons);
 
         ctx.fillStyle = "#bbbbbb";
         ctx.beginPath();
-        ctx.arc(plotX(newEthReserve), plotY(k / newEthReserve), 5, 0, 2 * Math.PI);
+        ctx.arc(plotX(newtokenOneReserve), plotY(k / newtokenOneReserve), 5, 0, 2 * Math.PI);
         ctx.fill();
 
         ctx.strokeStyle = "#009900";
         drawArrow(
           ctx,
-          plotX(props.ethReserve),
-          plotY(props.tokenReserve),
-          plotX(newEthReserve),
-          plotY(props.tokenReserve),
+          plotX(props.tokenOneReserve),
+          plotY(props.tokenTwoReserve),
+          plotX(newtokenOneReserve),
+          plotY(props.tokenTwoReserve),
         );
 
         ctx.fillStyle = "#000000";
         ctx.fillText(
-          "" + props.addingEth + " ETH input",
-          plotX(props.ethReserve) + textSize,
-          plotY(props.tokenReserve) - textSize,
+          "" + props.addingBalloons + " 🎈 input",
+          plotX(props.tokenOneReserve) + textSize,
+          plotY(props.tokenTwoReserve) - textSize,
         );
 
         ctx.strokeStyle = "#990000";
-        drawArrow(ctx, plotX(newEthReserve), plotY(props.tokenReserve), plotX(newEthReserve), plotY(k / newEthReserve));
+        drawArrow(ctx, plotX(newtokenOneReserve), plotY(props.tokenTwoReserve), plotX(newtokenOneReserve), plotY(k / newtokenOneReserve));
 
-        let amountGained = Math.round((10000 * (props.addingEth * props.tokenReserve)) / newEthReserve) / 10000;
+        let amountGained = Math.round((10000 * (props.addingBalloons * props.tokenTwoReserve)) / newtokenOneReserve) / 10000;
         ctx.fillStyle = "#000000";
         ctx.fillText(
-          "" + amountGained + " 🎈 output (-0.3% fee)",
-          plotX(newEthReserve) + textSize,
-          plotY(k / newEthReserve),
+          "" + amountGained + " 🌑 output (-0.3% fee)",
+          plotX(newtokenOneReserve) + textSize,
+          plotY(k / newtokenOneReserve),
         );
-      } else if (props.addingToken) {
-        let newTokenReserve = props.tokenReserve + parseFloat(props.addingToken);
+      } else if (props.addingRocks) {
+        let newtokenTwoReserve = props.tokenTwoReserve + parseFloat(props.addingRocks);
 
         ctx.fillStyle = "#bbbbbb";
         ctx.beginPath();
-        ctx.arc(plotX(k / newTokenReserve), plotY(newTokenReserve), 5, 0, 2 * Math.PI);
+        ctx.arc(plotX(k / newtokenTwoReserve), plotY(newtokenTwoReserve), 5, 0, 2 * Math.PI);
         ctx.fill();
 
-        //console.log("newTokenReserve",newTokenReserve)
+        //console.log("newtokenTwoReserve",newtokenTwoReserve)
         ctx.strokeStyle = "#990000";
         drawArrow(
           ctx,
-          plotX(props.ethReserve),
-          plotY(props.tokenReserve),
-          plotX(props.ethReserve),
-          plotY(newTokenReserve),
+          plotX(props.tokenOneReserve),
+          plotY(props.tokenTwoReserve),
+          plotX(props.tokenOneReserve),
+          plotY(newtokenTwoReserve),
         );
 
         ctx.fillStyle = "#000000";
         ctx.fillText(
-          "" + props.addingToken + " 🎈 input",
-          plotX(props.ethReserve) + textSize,
-          plotY(props.tokenReserve),
+          "" + props.addingRocks + " 🌑 input",
+          plotX(props.tokenOneReserve) + textSize,
+          plotY(props.tokenTwoReserve),
         );
 
         ctx.strokeStyle = "#009900";
         drawArrow(
           ctx,
-          plotX(props.ethReserve),
-          plotY(newTokenReserve),
-          plotX(k / newTokenReserve),
-          plotY(newTokenReserve),
+          plotX(props.tokenOneReserve),
+          plotY(newtokenTwoReserve),
+          plotX(k / newtokenTwoReserve),
+          plotY(newtokenTwoReserve),
         );
 
-        let amountGained = Math.round((10000 * (props.addingToken * props.ethReserve)) / newTokenReserve) / 10000;
+        let amountGained = Math.round((10000 * (props.addingRocks * props.tokenOneReserve)) / newtokenTwoReserve) / 10000;
         //console.log("amountGained",amountGained)
         ctx.fillStyle = "#000000";
         ctx.fillText(
-          "" + amountGained + " ETH output (-0.3% fee)",
-          plotX(k / newTokenReserve) + textSize,
-          plotY(newTokenReserve) - textSize,
+          "" + amountGained + " 🎈 output (-0.3% fee)",
+          plotX(k / newtokenTwoReserve) + textSize,
+          plotY(newtokenTwoReserve) - textSize,
         );
       }
 
       ctx.fillStyle = "#0000FF";
       ctx.beginPath();
-      ctx.arc(plotX(props.ethReserve), plotY(props.tokenReserve), 5, 0, 2 * Math.PI);
+      ctx.arc(plotX(props.tokenOneReserve), plotY(props.tokenTwoReserve), 5, 0, 2 * Math.PI);
       ctx.fill();
     }
   }, [props]);
@@ -172,11 +172,11 @@ export default function Curve(props) {
   return (
     <div style={{ position: "relative", width: props.width, height: props.height }}>
       <canvas style={{ position: "absolute", left: 0, top: 0 }} ref={ref} width={props.width} height={props.height} />
-      <div style={{ position: "absolute", left: "20%", bottom: -20 }}>-- ETH Reserve --></div>
+      <div style={{ position: "absolute", left: "20%", bottom: -20 }}>-- Balloons Reserve --></div>
       <div
         style={{ position: "absolute", left: -20, bottom: "20%", transform: "rotate(-90deg)", transformOrigin: "0 0" }}
       >
-        -- Token Reserve -->
+        -- Rocks Reserve -->
       </div>
     </div>
   );

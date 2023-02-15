@@ -11,7 +11,8 @@ import TokenBalance from "./TokenBalance";
 import Blockies from "react-blockies";
 
 const contractName = "DEX";
-const tokenName = "Balloons";
+const tokenOneName = "Balloons";
+const tokenTwoName = "Rocks";
 
 export default function Dex(props) {
   let display = [];
@@ -23,12 +24,14 @@ export default function Dex(props) {
   const writeContracts = props.writeContracts;
 
   const contractAddress = props.readContracts[contractName].address;
-  const tokenAddress = props.readContracts[tokenName].address;
+  const tokenOneAddress = props.readContracts[tokenOneName].address;
+  const tokenTwoAddress = props.readContracts[tokenTwoName].address;
   const contractBalance = useBalance(props.localProvider, contractAddress);
 
-  const tokenBalance = useTokenBalance(props.readContracts[tokenName], contractAddress, props.localProvider);
-  const tokenBalanceFloat = parseFloat(ethers.utils.formatEther(tokenBalance));
-  const ethBalanceFloat = parseFloat(ethers.utils.formatEther(contractBalance));
+  const tokenOneBalance = useTokenBalance(props.readContracts[tokenOneName], contractAddress, props.localProvider);
+  const tokenTwoBalance = useTokenBalance(props.readContracts[tokenTwoName], contractAddress, props.localProvider);
+  const tokenOneBalanceFloat = parseFloat(ethers.utils.formatEther(tokenOneBalance));
+  const tokenTwoBalanceFloat = parseFloat(ethers.utils.formatEther(tokenTwoBalance));
   const liquidity = useContractReader(props.readContracts, contractName, "totalLiquidity");
 
   const rowForm = (title, icon, onClick) => {
@@ -70,41 +73,63 @@ export default function Dex(props) {
     display.push(
       <div>
         <Divider>DEX Transactions have a built in 1% slippage allowance.</Divider>
-        {rowForm("ethToToken", "💸", async value => {
-          let valueInEther = ethers.utils.parseEther("" + value);
-          console.log("valueInEther", valueInEther);
-          let price = await props.readContracts[contractName].price(valueInEther, contractBalance, tokenBalance)
+        {rowForm("balloonsToRocks", "🔏", async value => {
+          let tokenValue = ethers.utils.parseEther("" + value);
+          console.log("VAL IN ETHER", tokenValue);
+          let price = await props.readContracts[contractName].price(tokenValue, tokenOneBalance, tokenTwoBalance);
           let minTokensBack = price.mul(99).div(100);
           console.log("CURRENT PRICE", ethers.utils.formatEther(price));
-          console.log("MIN TOKENS BACK", ethers.utils.formatEther(minTokensBack));
-          let swapEthToTokenResult = await tx(writeContracts[contractName]["ethToToken"](minTokensBack, { value: valueInEther }));
-          console.log("swapEthToTokenResult:", swapEthToTokenResult);
-        })}
+          console.log("MIN ETH BACK", ethers.utils.formatEther(minTokensBack))
 
-        {rowForm("tokenToEth", "🔏", async value => {
-          let valueInEther = ethers.utils.parseEther("" + value);
-          console.log("VAL IN ETHER", valueInEther);
-          let price = await props.readContracts[contractName].price(valueInEther, tokenBalance, contractBalance);
-          let minEthBack = price.mul(99).div(100);
-          console.log("CURRENT PRICE", ethers.utils.formatEther(price));
-          console.log("MIN ETH BACK", ethers.utils.formatEther(minEthBack))
-
-          let allowance = await props.readContracts[tokenName].allowance(
+          let allowance = await props.readContracts[tokenOneName].allowance(
             props.address,
             props.readContracts[contractName].address,
           );
           console.log("allowance", allowance);
 
           let approveTx;
-          if (allowance.lt(valueInEther)) {
+          if (allowance.lt(tokenValue)) {
             approveTx = await tx(
-              writeContracts[tokenName].approve(props.readContracts[contractName].address, valueInEther, {
+              writeContracts[tokenOneName].approve(props.readContracts[contractName].address, tokenValue, {
                 gasLimit: 200000,
               }),
             );
           }
 
-          let swapTx = tx(writeContracts[contractName]["tokenToEth"](valueInEther, minEthBack, { gasLimit: 200000 }));
+          let swapTx = tx(writeContracts[contractName]["balloonsToRocks"](tokenValue, minTokensBack, { gasLimit: 200000 }));
+          if (approveTx) {
+            console.log("waiting on approve to finish...");
+            let approveTxResult = await approveTx;
+            console.log("approveTxResult:", approveTxResult);
+          }
+          let swapTxResult = await swapTx;
+          console.log("swapTxResult:", swapTxResult);
+        })}
+
+{rowForm("rocksToBalloons", "🔏", async value => {
+          let tokenValue = ethers.utils.parseEther("" + value);
+          console.log("VAL IN ETHER", tokenValue);
+          let price = await props.readContracts[contractName].price(tokenValue, tokenTwoBalance, tokenOneBalance);
+          let minTokensBack = price.mul(99).div(100);
+          console.log("CURRENT PRICE", ethers.utils.formatEther(price));
+          console.log("MIN ETH BACK", ethers.utils.formatEther(minTokensBack))
+
+          let allowance = await props.readContracts[tokenTwoName].allowance(
+            props.address,
+            props.readContracts[contractName].address,
+          );
+          console.log("allowance", allowance);
+
+          let approveTx;
+          if (allowance.lt(tokenValue)) {
+            approveTx = await tx(
+              writeContracts[tokenTwoName].approve(props.readContracts[contractName].address, tokenValue, {
+                gasLimit: 200000,
+              }),
+            );
+          }
+
+          let swapTx = tx(writeContracts[contractName]["rocksToBalloons"](tokenValue, minTokensBack, { gasLimit: 200000 }));
           if (approveTx) {
             console.log("waiting on approve to finish...");
             let approveTxResult = await approveTx;
@@ -118,14 +143,14 @@ export default function Dex(props) {
 
         {rowForm("deposit", "📥", async value => {
           let valueInEther = ethers.utils.parseEther("" + value);
-          let allowance = await props.readContracts[tokenName].allowance(
+          let allowance = await props.readContracts[tokenOneName].allowance(
             props.address,
             props.readContracts[contractName].address,
           );
           console.log("allowance", allowance);
           if (allowance.lt(valueInEther)) {
             await tx(
-              writeContracts[tokenName].approve(props.readContracts[contractName].address, valueInEther, {
+              writeContracts[tokenOneName].approve(props.readContracts[contractName].address, valueInEther, {
                 gasLimit: 200000,
               }),
             );
@@ -150,8 +175,8 @@ export default function Dex(props) {
             <div>
               <Address value={contractAddress} />
               <div style={{ float: "right", fontSize: 24 }}>
-                {parseFloat(ethers.utils.formatEther(contractBalance)).toFixed(4)} ⚖️
-                <TokenBalance name={tokenName} img={"🎈"} address={contractAddress} contracts={props.readContracts} />
+                <TokenBalance name={tokenOneName} img={"🎈"} address={contractAddress} contracts={props.readContracts} />
+                <TokenBalance name={tokenTwoName} img={"🌑"} address={contractAddress} contracts={props.readContracts} />
               </div>
             </div>
           }
@@ -171,14 +196,25 @@ export default function Dex(props) {
             contractConfig={props.contractConfig}
           />
         </Row>
+        <Row span={12}>
+          <Contract
+            name="Rocks"
+            signer={props.signer}
+            provider={props.localProvider}
+            show={["balanceOf", "approve"]}
+            address={props.address}
+            blockExplorer={props.blockExplorer}
+            contractConfig={props.contractConfig}
+          />
+        </Row>
       </Col>
       <Col span={12}>
         <div style={{ padding: 20 }}>
           <Curve
-            addingEth={values && values["ethToToken"] ? values["ethToToken"] : 0}
-            addingToken={values && values["tokenToEth"] ? values["tokenToEth"] : 0}
-            ethReserve={ethBalanceFloat}
-            tokenReserve={tokenBalanceFloat}
+            addingBalloons={values && values["balloonsToRocks"] ? values["balloonsToRocks"] : 0}
+            addingRocks={values && values["rocksToBalloons"] ? values["rocksToBalloons"] : 0}
+            tokenOneReserve={tokenOneBalanceFloat}
+            tokenTwoReserve={tokenTwoBalanceFloat}
             width={500}
             height={500}
           />
