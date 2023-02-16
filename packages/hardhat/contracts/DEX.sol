@@ -139,7 +139,7 @@ contract DEX {
 
         emit TokenSwap(
             msg.sender,
-            "balloons To rocks",
+            "balloons to rocks",
             tokensIn,
             tokenOutput
         );
@@ -178,14 +178,14 @@ contract DEX {
      * NOTE: user has to make sure to give DEX approval to spend both their tokens on their behalf by calling approve function prior to this function call.
      * NOTE: Equal parts of both assets will be removed from the user's wallet with respect to the price outlined by the AMM.
      */
-    function deposit() public returns (uint256 tokenOneDeposited) {
+    function deposit(uint256 tokenOneDeposited) public returns (uint256 liquidityMinted) {
         if (tokenOneDeposited == 0) revert ZeroQuantityError();
 
         uint256 tokenOneReserve = tokenOne.balanceOf(address(this));
         uint256 tokenTwoReserve = tokenTwo.balanceOf(address(this));
         uint256 tokenTwoDeposited = (tokenOneDeposited * tokenOneReserve) / tokenTwoReserve;
 
-        uint256 liquidityMinted = (tokenOneDeposited * totalLiquidity) / tokenOneReserve;
+        liquidityMinted = (tokenOneDeposited * totalLiquidity) / tokenOneReserve;
         liquidity[msg.sender] += liquidityMinted;
         totalLiquidity += tokenOneDeposited;
 

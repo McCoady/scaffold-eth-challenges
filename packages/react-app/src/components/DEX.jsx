@@ -142,25 +142,38 @@ export default function Dex(props) {
         <Divider> Liquidity ({liquidity ? ethers.utils.formatEther(liquidity) : "none"}):</Divider>
 
         {rowForm("deposit", "📥", async value => {
-          let valueInEther = ethers.utils.parseEther("" + value);
-          let allowance = await props.readContracts[tokenOneName].allowance(
+          let valueInBalloons = ethers.utils.parseEther("" + value);
+          let tokenOneAllowance = await props.readContracts[tokenOneName].allowance(
             props.address,
             props.readContracts[contractName].address,
           );
-          console.log("allowance", allowance);
-          if (allowance.lt(valueInEther)) {
+          let tokenTwoAllowance = await props.readContracts[tokenTwoName].allowance(
+            props.address,
+            props.readContracts[contractName].address,
+          );
+
+          console.log("Balloons allowance", tokenOneAllowance);
+          console.log("Rocks Allowance", tokenTwoAllowance);
+          if (tokenOneAllowance.lt(valueInBalloons)) {
             await tx(
-              writeContracts[tokenOneName].approve(props.readContracts[contractName].address, valueInEther, {
+              writeContracts[tokenOneName].approve(props.readContracts[contractName].address, ethers.constants.MaxUint256, {
                 gasLimit: 200000,
               }),
             );
           }
-          await tx(writeContracts[contractName]["deposit"]({ value: valueInEther, gasLimit: 200000 }));
+          if (tokenTwoAllowance.lt(valueInBalloons)) {
+            await tx(
+              writeContracts[tokenTwoName].approve(props.readContracts[contractName].address, ethers.constants.MaxUint256, {
+                gasLimit: 200000,
+              }),
+            );
+          }
+          await tx(writeContracts[contractName]["deposit"]( valueInBalloons, {gasLimit: 200000 }));
         })}
 
         {rowForm("withdraw", "📤", async value => {
-          let valueInEther = ethers.utils.parseEther("" + value);
-          let withdrawTxResult = await tx(writeContracts[contractName]["withdraw"](valueInEther));
+          let valueInBalloons = ethers.utils.parseEther("" + value);
+          let withdrawTxResult = await tx(writeContracts[contractName]["withdraw"](valueInBalloons));
           console.log("withdrawTxResult:", withdrawTxResult);
         })}
       </div>,
