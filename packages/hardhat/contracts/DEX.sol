@@ -12,6 +12,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  * @notice A simple token to token DEX with built in slippage protection
  */
 contract DEX {
+    error InitError();
+
     error TokenTransferError(address _token);
 
     error ZeroQuantityError();
@@ -76,21 +78,28 @@ contract DEX {
      * NOTE: since ratio is 1:1, this is fine to initialize the totalLiquidity (wrt to balloons) as equal to eth balance of contract.
      */
     function init(uint256 tokens) public returns (uint256) {
-        require(totalLiquidity == 0, "DEX_ALREADY_INIT");
+        if (totalLiquidity != 0) revert InitError();
+
         totalLiquidity = tokens;
+
         liquidity[msg.sender] = totalLiquidity;
+
+        // transfer balloons to the contract
         bool tokenOneTransferred = tokenOne.transferFrom(
             msg.sender,
             address(this),
             tokens
         );
+        if (!tokenOneTransferred) revert TokenTransferError(address(tokenOne));
+
+        // transfer rocks to the contract
         bool tokenTwoTransferred = tokenTwo.transferFrom(
             msg.sender,
             address(this),
             tokens
         );
-        if (!tokenOneTransferred) revert TokenTransferError(address(tokenOne));
         if (!tokenTwoTransferred) revert TokenTransferError(address(tokenTwo));
+
         return totalLiquidity;
     }
 
@@ -128,12 +137,17 @@ contract DEX {
         if (tokensIn == 0) revert ZeroQuantityError();
         uint256 tokenOneReserve = tokenOne.balanceOf(address(this));
         uint256 tokenTwoReserve = tokenTwo.balanceOf(address(this));
+
+        // Calculate how many tokens they'll receive
         tokenOutput = price(tokensIn, tokenOneReserve, tokenTwoReserve);
+        // Check received tokens greater than their minimum accepted amount
         if (tokenOutput < minTokensBack) revert SlippageError();
 
+        // transfer balloons from msg.sender to dex
         bool tokenOneTransferred = tokenOne.transferFrom(msg.sender,address(this), tokensIn);
         if (!tokenOneTransferred) revert TokenTransferError(address(tokenOne));
 
+        // transfer rocks from dex to msg.sender
         bool tokenTwoTransferred = tokenTwo.transfer(msg.sender, tokenOutput);
         if (!tokenTwoTransferred) revert TokenTransferError(address(tokenTwo));
 
@@ -155,12 +169,16 @@ contract DEX {
         if (tokensIn == 0) revert ZeroQuantityError();
         uint256 tokenTwoReserve = tokenTwo.balanceOf(address(this));
         uint256 tokenOneReserve = tokenOne.balanceOf(address(this));
+        // Calculate how many tokens they'll receive
         tokenOutput = price(tokensIn, tokenTwoReserve, tokenOneReserve);
+        // Check received tokens greater than their minimum accepted amount
         if (tokenOutput < minTokensBack) revert SlippageError();
 
+        // transfer rocks from msg.sender to dex
         bool tokenTwoTransferred = tokenTwo.transferFrom(msg.sender,address(this), tokensIn);
         if (!tokenTwoTransferred) revert TokenTransferError(address(tokenTwo));
 
+        // transfer balloons from dex to msg.sender
         bool tokenOneTransferred = tokenOne.transfer(msg.sender, tokenOutput);
         if (!tokenOneTransferred) revert TokenTransferError(address(tokenOne));
 
@@ -189,6 +207,7 @@ contract DEX {
         liquidity[msg.sender] += liquidityMinted;
         totalLiquidity += tokenOneDeposited;
 
+        // transfer balloons to dex
         bool tokenOneTransferred = tokenOne.transferFrom(
             msg.sender,
             address(this),
@@ -196,6 +215,7 @@ contract DEX {
         );
         if (!tokenOneTransferred) revert TokenTransferError(address(tokenOne));
 
+        // transfer rocks to dex
         bool tokenTwoTransferred = tokenTwo.transferFrom(
             msg.sender,
             address(this),
@@ -229,12 +249,15 @@ contract DEX {
         tokenOneAmount = (amount * tokenOneReserve) / totalLiquidity;
         tokenTwoAmount = (amount * tokenTwoReserve) / totalLiquidity;
 
+        // update liquidity amounts for owner
         liquidity[msg.sender] -= amount;
+        // update liquidity amounts of dex
         totalLiquidity -= amount;
 
+        // Send balloons from dex to msg.sender
         bool tokenOneSent = tokenOne.transfer(msg.sender, tokenOneAmount);
         if (!tokenOneSent) revert TokenTransferError(address(tokenOne));
-
+        // Send rocks from dex to msg.sender
         bool tokenTwoSent = tokenTwo.transfer(msg.sender, tokenTwoAmount);
         if (!tokenTwoSent) revert TokenTransferError(address(tokenTwo));
 
